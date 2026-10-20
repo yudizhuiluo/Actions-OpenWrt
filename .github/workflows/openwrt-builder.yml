@@ -1,13 +1,8 @@
 #
 # https://github.com/P3TERX/Actions-OpenWrt
 #
-# File: .github/workflows/openwrt-bulder.yml
-# Description: Build OpenWrt using GitHub Actions
-#
-# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
-#
-# This is free software, licensed under the MIT License.
-# See /LICENSE for more information.
+# File: .github/workflows/openwrt-builder.yml
+# 已为 CUDY TR3000 256MB + padavanonly openwrt-24.10-6.6 闭源驱动分支修正
 #
 
 name: OpenWrt Builder
@@ -17,8 +12,12 @@ on:
   workflow_dispatch:
 
 env:
+  # 你 fork 的源码仓库 + 24.10-6.6 分支（闭源 mtwifi + 原生支持 TR3000 256MB）
   REPO_URL: https://github.com/yudizhuiluo/immortalwrt-mt798x-5.4
   REPO_BRANCH: openwrt-24.10-6.6
+  # 也可以直接用 237 官方源：
+  # REPO_URL: https://github.com/padavanonly/immortalwrt-mt798x-6.6
+  # REPO_BRANCH: openwrt-24.10-6.6
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   DIY_P1_SH: diy-part1.sh
@@ -54,7 +53,7 @@ jobs:
       working-directory: /workdir
       run: |
         df -hT $PWD
-        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
 
     - name: Load custom feeds
@@ -74,11 +73,20 @@ jobs:
       run: |
         [ -e files ] && mv files openwrt/files
         [ -e $CONFIG_FILE ] && cp $CONFIG_FILE openwrt/.config
+        chmod +x $DIY_P2_SH
         cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P2_SH
         make defconfig
         echo "=================== 当前生效的设备配置 ==================="
-        grep "cudy_tr3000" .config || echo "错误：没找到这个！"
+        grep "CONFIG_TARGET_DEVICE.*cudy_tr3000" .config
         echo "=========================================================="
+        # 防呆检查：目标设备和闭源驱动必须都在，否则直接失败，不浪费一次编译
+        if ! grep -q 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-v1-256mb=y' .config; then
+          echo "❌ TR3000 256MB 目标丢失，.config 与源码分支不匹配，停止！"
+          exit 1
+        fi
+        grep -q 'CONFIG_PACKAGE_kmod-mt_wifi=y' .config || { echo "❌ 闭源驱动 kmod-mt_wifi 未选中，停止！"; exit 1; }
+        echo "✅ 设备与闭源驱动检查通过"
 
     - name: Download package
       id: package
@@ -94,7 +102,7 @@ jobs:
       run: |
         cd openwrt
         echo -e "$(nproc) thread compile"
-        make -j$(nproc) || make -j1 || make -j1 V=s
+        make -j$(nproc) || make -j1 V=s
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
