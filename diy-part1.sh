@@ -15,17 +15,17 @@ if ! grep -q 'src-git ua2f' feeds.conf.default; then
     echo 'src-git ua2f https://github.com/Zxilly/UA2F.git' >> feeds.conf.default
 fi
 
-# ===== 3) Design 主题（包名由目录名决定，feed 名必须与包名一致）=====
-# 重要：官方 OpenWrt 是新版 JS LuCI，必须用 js 分支（README 明确支持 21/23/24.x，
-#       v7.0 持续维护、修了 OpenClash 兼容 bug）。
-#       main 分支（5.8.0）是给 LEDE 的 lua 版 LuCI 用的旧版，24.10 上别用。
-if ! grep -q 'src-git luci-theme-design' feeds.conf.default; then
-    echo 'src-git luci-theme-design https://github.com/0x676e67/luci-theme-design.git^js' >> feeds.conf.default
+# ===== 3) Design 主题 =====
+# 重要：feeds.conf 的 feed 名只允许 \w+（字母/数字/下划线），不能带连字符！
+#       包名 luci-theme-design 由仓库内 luci.mk 从目录名自动推导，feed 名用 design 即可。
+#       官方 OpenWrt 是新版 JS LuCI，必须用 js 分支（README 明确支持 21/23/24.x）。
+if ! grep -q 'src-git design ' feeds.conf.default; then
+    echo 'src-git design https://github.com/0x676e67/luci-theme-design.git^js' >> feeds.conf.default
 fi
 
 # ===== 4) Design Config（Design 主题配套设置页）=====
-if ! grep -q 'src-git luci-app-design-config' feeds.conf.default; then
-    echo 'src-git luci-app-design-config https://github.com/0x676e67/luci-app-design-config.git' >> feeds.conf.default
+if ! grep -q 'src-git designconfig' feeds.conf.default; then
+    echo 'src-git designconfig https://github.com/0x676e67/luci-app-design-config.git' >> feeds.conf.default
 fi
 
 exit 0
