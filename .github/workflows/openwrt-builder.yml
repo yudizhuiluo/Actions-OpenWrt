@@ -75,16 +75,17 @@ jobs:
           $GITHUB_WORKSPACE/$DIY_P2_SH
           make defconfig
           echo "=================== 当前生效的设备配置 ==================="
-          grep "CONFIG_TARGET_DEVICE.*cudy_tr3000" .config || true
-          grep -E '^CONFIG_TARGET_(mediatek|mediatek_filogic)(_DEVICE)?=' .config | head -20 || true
+          grep '^CONFIG_TARGET_.*cudy_tr3000' .config || true
+          grep '^CONFIG_TARGET_mediatek' .config | head -20 || true
           echo "=========================================================="
           # 防呆检查：官方 24.10 的 TR3000 256MB 设备符号必须存在，否则直接失败
-          if ! grep -q 'CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y' .config; then
+          # 真实符号：CONFIG_TARGET_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1
+          if ! grep -q '^CONFIG_TARGET_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y' .config; then
             echo "❌ TR3000 256MB 目标丢失，.config 与 openwrt-24.10 分支不匹配，停止！"
-            echo "（上方已打印当前生效的 TARGET 配置行；若 TARGET 列表为空，说明 defconfig 前 .config 没生效，请把整段日志发回排查）"
+            echo "（上方已打印当前生效的 TARGET/DEVICE 配置行；若 DEVICE 行为空，说明 defconfig 前 .config 没生效，请把整段日志发回排查）"
             exit 1
           fi
-          grep -q 'CONFIG_TARGET_mediatek_filogic=y' .config || { echo "❌ filogic 子目标未选中，停止！"; exit 1; }
+          grep -q '^CONFIG_TARGET_mediatek_filogic=y' .config || { echo "❌ filogic 子目标未选中，停止！"; exit 1; }
           echo "✅ 设备与目标检查通过"
 
       - name: Download package
