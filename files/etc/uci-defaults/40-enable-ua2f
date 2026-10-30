@@ -1,0 +1,10 @@
+#!/bin/sh
+# molinailv 定制：默认启用 UA2F（经 luci-app-ua2f 的 autoua2f 服务统一管理）
+# luci-app-ua2f（服务->防检测）的 init 启动时会把 autoua2f 配置同步进 ua2f
+# 并管理 ua2f 进程；这里只在首次开机把默认值设好并开机自启。
+uci -q set autoua2f.config.enabled=1
+uci -q set autoua2f.config.handle_fw=1
+uci -q set autoua2f.config.Custom_UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+uci -q commit autoua2f
+service autoua2f enable 2>/dev/null
+exit 0
