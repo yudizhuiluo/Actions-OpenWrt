@@ -1,0 +1,29 @@
+#!/bin/sh
+# molinailv 定制：首次开机默认启用 WiFi（2.4G + 5G，开放网络）
+# 顺序说明：uci-defaults 在 config_generate 之前执行，这里先确保生成
+# 默认无线配置（含正确 radio 参数），再启用并改 SSID。
+[ -f /etc/config/wireless ] || /bin/config_generate
+
+uci set wireless.radio0.disabled=0
+uci set wireless.radio1.disabled=0
+
+uci -q get wireless.default_radio0 >/dev/null || {
+	uci set wireless.default_radio0=wifi-iface
+	uci set wireless.default_radio0.device=radio0
+	uci set wireless.default_radio0.mode=ap
+	uci set wireless.default_radio0.network=lan
+}
+uci -q get wireless.default_radio1 >/dev/null || {
+	uci set wireless.default_radio1=wifi-iface
+	uci set wireless.default_radio1.device=radio1
+	uci set wireless.default_radio1.mode=ap
+	uci set wireless.default_radio1.network=lan
+}
+
+uci set wireless.default_radio0.ssid=molinailv
+uci set wireless.default_radio1.ssid=molinailv-5G
+uci set wireless.default_radio0.encryption=none
+uci set wireless.default_radio1.encryption=none
+
+uci commit wireless
+exit 0
